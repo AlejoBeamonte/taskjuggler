@@ -5,7 +5,7 @@
  * some elements of it
  */
 
-project pSix "Web Game"  2025-12-15 +5m {
+project pSix "Web Game"  2025-12-15 +6m {
   # Set the default time zone for the project. If not specified, UTC
   # is used.
   timezone "Europe/Paris"
@@ -19,7 +19,7 @@ project pSix "Web Game"  2025-12-15 +5m {
   # the project reports. If not specified, the current day will be
   # used, but this will likely be outside of the project range, so it
   # can't be seen in the reports.
-  now 2026-02-25-13:00
+  now 2026-04-15-11:00
   # The currency for all money values is the US Dollar.
   currency "EUR"
 
@@ -45,8 +45,9 @@ rate 145.2
 account cost "Project Cost" {
   account manag "Management"
   account wFront "Web Front-End"
-  account mFront "Mobile Front-end"
+  account mFront "Mobile Front-End"
   account back "Back-End"
+  account cloud "Cloud Deployment"
 }
 account rev "Payments"
 # The Profit&Loss analysis should be rev - cost accounts.
@@ -67,6 +68,10 @@ resource dev2 "Samantha Müller" {
 }
 resource dev3 "Peter Green" {
   email "kkk@unizar.es"
+}
+resource alejo "Alejo Beamonte" {
+  email "899577@unizar.es"
+  limits { dailymax 4h }
 }
 
 # Now we specify the work packages. The whole project is described as
@@ -144,7 +149,77 @@ task WMGame "Web & Mobile Game" {
       effort 6d
       allocate dev1
       depends WMGame.twebF.tFEc
-    }    
+    }
+  }
+
+  task tmobF "Mobile Front End" {
+    purge chargeset
+    chargeset mFront
+    responsible alejo
+    depends WMGame.tback.tBEd
+    task tMUGd "Mobile UX/UI Design" {
+      effort 6d
+      allocate alejo
+      depends WMGame.twebF.tGUId
+    }
+    task tMArch "Mobile Architecture and Navigation" {
+      effort 5d
+      allocate alejo
+      allocate dev3
+      depends WMGame.tmobF.tMUGd
+    }
+    task tMImpl "Mobile Front End Construction" {
+      effort 14d
+      allocate alejo
+      allocate dev2
+      depends WMGame.tmobF.tMArch
+    }
+    task tMInt "Mobile API Integration" {
+      effort 6d
+      allocate alejo
+      allocate dev1
+      depends WMGame.tmobF.tMImpl
+      depends WMGame.tback.tbackDev
+    }
+    task tMTest "Mobile Front End Test" {
+      effort 5d
+      allocate alejo
+      depends WMGame.tmobF.tMInt
+    }
+  }
+
+  task tcloud "Cloud Back-End Deployment" {
+    purge chargeset
+    chargeset cloud
+    responsible alejo
+    depends WMGame.tback.tbackDev
+    task tCloudEval "Cloud Evaluation and Provider Selection" {
+      effort 4d
+      allocate alejo
+      allocate boss
+      journalentry 2026-04-15 "Cloud alternatives evaluated" {
+        author alejo
+        alert yellow
+        summary "A comparative analysis of the cloud providers has been started and the selection criteria have been documented."
+      }
+    }
+    task tCloudPrep "Deployment Pipeline Preparation" {
+      effort 5d
+      allocate alejo
+      allocate dev1
+      depends WMGame.tcloud.tCloudEval
+    }
+    task tCloudDep "Cloud Deployment" {
+      effort 4d
+      allocate alejo
+      depends WMGame.tcloud.tCloudPrep
+    }
+    task tCloudVer "Cloud Verification" {
+      effort 3d
+      allocate alejo
+      allocate dev2
+      depends WMGame.tcloud.tCloudDep
+    }
   }
 
   task ttest "Acceptance tests" {
@@ -152,8 +227,12 @@ task WMGame "Web & Mobile Game" {
       allocate boss
       allocate dev2
       actual:effort 20d
+      plan:start 2026-05-15
+      actual:start 2026-05-15
       depends WMGame.twebF
+      depends WMGame.tmobF
       depends WMGame.tback
+      depends WMGame.tcloud
       }
 
     
@@ -223,6 +302,12 @@ textreport frame "" {
     formats html
     center '<[report id="overview"]>'
   }
+
+  textreport planOverview "InitialPlan" {
+    formats html
+    title "Initial Plan"
+    center '<[report id="overviewPlan"]>'
+  }
   
   textreport "Status" {
     formats html
@@ -263,6 +348,19 @@ taskreport overview "" {
           revenue, chart { ${TaskTip} }
   # For this report we like to have the abbreviated weekday in front
   # of the date. %a is the tag for this.
+  timeformat "%a %Y-%m-%d"
+  loadunit days
+  hideresource @all
+  balance cost rev
+  caption 'All effort values are in man days.'
+}
+
+taskreport overviewPlan "" {
+  scenarios plan
+  headline "Initial Project Plan"
+  columns bsi { title 'WBS' },
+          name, start, end, effort, cost,
+          revenue, chart { ${TaskTip} }
   timeformat "%a %Y-%m-%d"
   loadunit days
   hideresource @all
